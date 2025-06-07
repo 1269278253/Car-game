@@ -1,72 +1,123 @@
 import * as PIXI from 'pixi.js';
 import { CONFIG } from '../config/config';
+import { ASSETS } from '../config/assets';
 
 export class Enemy extends PIXI.Container {
     constructor() {
         super();
         
+        // 添加名字属性
+        this.name = 'enemy';
+        
         // 初始化属性
         this.health = CONFIG.ENEMY.HEALTH;
         this.speed = CONFIG.ENEMY.SPEED;
         this.damage = CONFIG.ENEMY.DAMAGE;
+        this.collisionRadius = CONFIG.ENEMY.SIZE / 2;
         
-        // 设置初始位置（在屏幕边缘随机生成）
+        // 设置初始位置（在游戏世界边缘随机生成）
         this.setRandomPosition();
         
         // 创建敌人图形
         this.setup();
     }
-
+    
     setup() {
-        // 创建敌人主体
-        this.body = new PIXI.Graphics();
-        this.updateAppearance();
+        // 创建敌人主体（使用坦克精灵）
+        this.body = PIXI.Sprite.from(ASSETS.TANKS.BODY.RED);
+        this.body.name = 'enemy_body';
+        this.body.anchor.set(0.5);
+        this.body.width = CONFIG.ENEMY.SIZE * 1.5;
+        this.body.height = CONFIG.ENEMY.SIZE * 1.5;
         this.addChild(this.body);
 
+        // 创建炮塔
+        this.turret = PIXI.Sprite.from(ASSETS.TANKS.BARREL.RED);
+        this.turret.name = 'enemy_turret';
+        this.turret.anchor.set(0.25, 0.5);
+        this.turret.width = CONFIG.ENEMY.SIZE * 1.2;
+        this.turret.height = CONFIG.ENEMY.SIZE * 0.4;
+        this.addChild(this.turret);
+
         // 创建血条
-        this.healthBar = new PIXI.Graphics();
-        this.healthBar.y = -20; // 将血条放在敌人上方
-        this.addChild(this.healthBar);
-        this.updateHealthBar();
+        this.createHealthBar();
     }
 
     setRandomPosition() {
-        // 随机选择生成位置（上、下、左、右四个边）
+        // 随机选择生成位置（上、下、左、右边缘）
         const side = Math.floor(Math.random() * 4);
+        const worldWidth = CONFIG.GAME.WORLD_WIDTH;
+        const worldHeight = CONFIG.GAME.WORLD_HEIGHT;
+        
         switch(side) {
-            case 0: // 上边
-                this.x = Math.random() * CONFIG.GAME.WIDTH;
+            case 0: // 上边缘
+                this.x = Math.random() * worldWidth;
                 this.y = -CONFIG.ENEMY.SIZE;
                 break;
-            case 1: // 右边
-                this.x = CONFIG.GAME.WIDTH + CONFIG.ENEMY.SIZE;
-                this.y = Math.random() * CONFIG.GAME.HEIGHT;
+            case 1: // 右边缘
+                this.x = worldWidth + CONFIG.ENEMY.SIZE;
+                this.y = Math.random() * worldHeight;
                 break;
-            case 2: // 下边
-                this.x = Math.random() * CONFIG.GAME.WIDTH;
-                this.y = CONFIG.GAME.HEIGHT + CONFIG.ENEMY.SIZE;
+            case 2: // 下边缘
+                this.x = Math.random() * worldWidth;
+                this.y = worldHeight + CONFIG.ENEMY.SIZE;
                 break;
-            case 3: // 左边
+            case 3: // 左边缘
                 this.x = -CONFIG.ENEMY.SIZE;
-                this.y = Math.random() * CONFIG.GAME.HEIGHT;
+                this.y = Math.random() * worldHeight;
                 break;
         }
     }
 
-    updateAppearance() {
-        this.body.clear();
-        
-        // 根据生命值设置颜色
-        const healthPercent = this.health / CONFIG.ENEMY.HEALTH;
-        const color = this.getHealthColor(healthPercent);
-        
-        // 绘制敌人形状（三角形）
-        this.body.beginFill(color);
-        this.body.moveTo(-CONFIG.ENEMY.SIZE/2, CONFIG.ENEMY.SIZE/2);
-        this.body.lineTo(CONFIG.ENEMY.SIZE/2, CONFIG.ENEMY.SIZE/2);
-        this.body.lineTo(0, -CONFIG.ENEMY.SIZE/2);
-        this.body.closePath();
-        this.body.endFill();
+    update(delta, fortress) {
+        // 如果堡垒不存在或已被销毁，停止更新
+        if (!fortress || !fortress.parent) {
+            return false;
+        }
+
+        // 计算到堡垒的方向
+        const dx = fortress.x - this.x;
+        const dy = fortress.y - this.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance > this.speed) {
+            // 计算新位置
+            const newX = this.x + (dx / distance) * this.speed * delta;
+            const newY = this.y + (dy / distance) * this.speed * delta;
+            
+            // 检查与树木的碰撞
+            const playScene = this.parent.parent;
+            if (!playScene.checkCollisionWithTrees(this, newX, newY)) {
+                this.x = newX;
+                this.y = newY;
+            } else {
+                // 如果发生碰撞，尝试绕过障碍物
+                const angle = Math.random() * Math.PI * 2;
+                this.x += Math.cos(angle) * this.speed * delta;
+                this.y += Math.sin(angle) * this.speed * delta;
+            }
+
+            // 更新朝向
+            this.rotation = Math.atan2(dy, dx);
+            this.turret.rotation = this.rotation;
+        }
+
+        // 如果接触到堡垒，造成伤害
+        if (distance < CONFIG.FORTRESS.SIZE) {
+            this.attack(fortress);
+        }
+
+        // 更新血条位置
+        this.updateHealthBar();
+        return false;
+    }
+
+    createHealthBar() {
+        // 创建血条背景
+        this.healthBar = new PIXI.Graphics();
+        this.healthBar.y = -30; // 将血条放在敌人上方
+        this.addChild(this.healthBar);
+        this.updateHealthBar();
     }
 
     updateHealthBar() {
@@ -74,51 +125,24 @@ export class Enemy extends PIXI.Container {
         
         // 血条背景
         this.healthBar.beginFill(0xFF0000);
-        this.healthBar.drawRect(-15, 0, 30, 4);
+        this.healthBar.drawRect(-20, 0, 40, 5);
         this.healthBar.endFill();
         
         // 当前血量
         const healthPercent = this.health / CONFIG.ENEMY.HEALTH;
         this.healthBar.beginFill(0x00FF00);
-        this.healthBar.drawRect(-15, 0, 30 * healthPercent, 4);
+        this.healthBar.drawRect(-20, 0, 40 * healthPercent, 5);
         this.healthBar.endFill();
     }
 
-    getHealthColor(percent) {
-        if (percent > 0.6) return 0xFF0000; // 红色
-        if (percent > 0.3) return 0xFF6600; // 橙色
-        return 0xFF9900; // 深橙色
-    }
-
-    update(delta, fortress) {
-        if (!fortress) return false;
-
-        // 计算到堡垒的方向
-        const dx = fortress.x - this.x;
-        const dy = fortress.y - this.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        // 移动向堡垒
-        if (distance > 0) {
-            this.x += (dx / distance) * this.speed * delta;
-            this.y += (dy / distance) * this.speed * delta;
-
-            // 如果接触到堡垒，造成伤害
-            if (distance < CONFIG.FORTRESS.SIZE) {
-                this.attack(fortress);
-            }
-        }
-
-        return false;
-    }
-
     attack(fortress) {
-        fortress.takeDamage(this.damage);
+        if (fortress && fortress.parent) {
+            fortress.takeDamage(this.damage);
+        }
     }
 
     takeDamage(damage) {
         this.health -= damage;
-        this.updateAppearance();
         this.updateHealthBar();
         return this.health <= 0;
     }

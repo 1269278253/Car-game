@@ -18,6 +18,9 @@ export class Bullet extends PIXI.Container {
     constructor(x, y, angle, speed = CONFIG.BULLET.SPEED) {
         super();
         
+        // 添加名字属性
+        this.name = 'bullet';
+        
         // 设置位置
         this.x = x;
         this.y = y;
@@ -26,6 +29,8 @@ export class Bullet extends PIXI.Container {
         this.angle = angle;
         this.speed = speed;
         this.damage = CONFIG.BULLET.DAMAGE;
+        this.initialX = x;
+        this.initialY = y;
 
         // 初始化图形
         this.setup();
@@ -38,6 +43,7 @@ export class Bullet extends PIXI.Container {
     setup() {
         // 创建子弹精灵
         this.sprite = PIXI.Sprite.from(ASSETS.BULLETS.BLUE);
+        this.sprite.name = 'bullet_sprite';
         this.sprite.anchor.set(0.5);
         this.sprite.width = CONFIG.BULLET.SIZE * 2;
         this.sprite.height = CONFIG.BULLET.SIZE * 2;
@@ -71,9 +77,12 @@ export class Bullet extends PIXI.Container {
     isOutOfBounds() {
         return (
             this.x < 0 ||
-            this.x > CONFIG.GAME.WIDTH ||
+            this.x > CONFIG.GAME.WORLD_WIDTH ||
             this.y < 0 ||
-            this.y > CONFIG.GAME.HEIGHT
+            this.y > CONFIG.GAME.WORLD_HEIGHT ||
+            // 检查子弹是否超出最大射程
+            Math.abs(this.x - this.initialX) > CONFIG.BULLET.RANGE ||
+            Math.abs(this.y - this.initialY) > CONFIG.BULLET.RANGE
         );
     }
 

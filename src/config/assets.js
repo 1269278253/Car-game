@@ -21,5 +21,12 @@ export const ASSETS = {
         GREEN: 'assets/sprites/Bullets/bulletGreenSilver_outline.png',
         BLACK: 'assets/sprites/Bullets/bulletSilverSilver_outline.png',
         BEIGE: 'assets/sprites/Bullets/bulletBeigeSilver_outline.png'
+    },
+    ENVIRONMENT: {
+        SAND: 'assets/sprites/Environment/sand.png',
+        DIRT: 'assets/sprites/Environment/dirt.png',
+        GRASS: 'assets/sprites/Environment/grass.png',
+        TREE_LARGE: 'assets/sprites/Environment/treeLarge.png',
+        TREE_SMALL: 'assets/sprites/Environment/treeSmall.png'
     }
 }; 

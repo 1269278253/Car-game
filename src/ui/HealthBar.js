@@ -36,8 +36,13 @@ export class HealthBar extends PIXI.Container {
     }
 
     update() {
-        if (!this.target || typeof this.target.health === 'undefined') {
-            console.warn('Target object is missing or does not have health property');
+        // 检查目标是否存在且未被销毁
+        if (!this.target || !this.target.parent || typeof this.target.health === 'undefined') {
+            // 如果目标不存在，将血条设置为空
+            this.bar.clear();
+            this.bar.beginFill(0x00FF00);
+            this.bar.drawRect(0, 0, 0, this.height);
+            this.bar.endFill();
             return;
         }
 
@@ -48,5 +53,11 @@ export class HealthBar extends PIXI.Container {
         this.bar.beginFill(0x00FF00);
         this.bar.drawRect(0, 0, barWidth, this.height);
         this.bar.endFill();
+    }
+
+    destroy() {
+        // 清除对目标的引用
+        this.target = null;
+        super.destroy();
     }
 } 

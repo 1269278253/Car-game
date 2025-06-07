@@ -6,6 +6,7 @@ import { Bullet } from './Bullet';
 export class Fortress extends PIXI.Container {
     constructor() {
         super();
+        this.name = 'fortress';
         this.health = CONFIG.FORTRESS.INITIAL_HEALTH;
         this.speed = CONFIG.FORTRESS.SPEED;
         this.rotation = 0;
@@ -29,6 +30,7 @@ export class Fortress extends PIXI.Container {
     setup() {
         // 创建坦克主体
         this.body = PIXI.Sprite.from(ASSETS.TANKS.BODY.BLUE);
+        this.body.name = 'fortress_body';
         this.body.anchor.set(0.5);
         this.body.width = CONFIG.FORTRESS.SIZE * 1.5;
         this.body.height = CONFIG.FORTRESS.SIZE * 1.5;
@@ -36,6 +38,7 @@ export class Fortress extends PIXI.Container {
 
         // 创建炮塔
         this.turret = PIXI.Sprite.from(ASSETS.TANKS.BARREL.BLUE);
+        this.turret.name = 'fortress_turret';
         this.turret.anchor.set(0.25, 0.5); // 设置锚点在炮管底部中心
         this.turret.width = CONFIG.FORTRESS.SIZE * 1.2;
         this.turret.height = CONFIG.FORTRESS.SIZE * 0.4;
@@ -69,7 +72,7 @@ export class Fortress extends PIXI.Container {
 
     startAutoFire() {
         // 每隔一定时间发射子弹
-        setInterval(() => {
+        this.fireTimer = setInterval(() => {
             this.fire();
         }, CONFIG.FORTRESS.FIRE_RATE);
     }
@@ -77,31 +80,35 @@ export class Fortress extends PIXI.Container {
     fire() {
         const now = Date.now();
         if (now - this.lastFireTime >= CONFIG.FORTRESS.FIRE_RATE) {
-            // 计算子弹发射位置（从炮管前端发射）
-            const barrelLength = this.turret.width * 0.75;
-            const bulletX = this.x + Math.cos(this.turret.rotation) * barrelLength;
-            const bulletY = this.y + Math.sin(this.turret.rotation) * barrelLength;
+            try {
+                // 计算子弹发射位置（从炮管前端发射）
+                const barrelLength = this.turret.width * 0.75;
+                const bulletX = this.x + Math.cos(this.turret.rotation) * barrelLength;
+                const bulletY = this.y + Math.sin(this.turret.rotation) * barrelLength;
 
-            // 创建新子弹
-            const bullet = new Bullet(bulletX, bulletY, this.turret.rotation);
-            
-            // 发出发射事件
-            this.emit('bulletFired', bullet);
-            this.lastFireTime = now;
+                // 创建新子弹
+                const bullet = new Bullet(bulletX, bulletY, this.turret.rotation);
+                
+                // 发出发射事件
+                this.emit('bulletFired', bullet);
+                this.lastFireTime = now;
+            } catch (error) {
+                console.error('子弹创建失败:', error);
+            }
         }
     }
 
     findNearestEnemy() {
         // 获取场景中的敌人数组
-        const parent = this.parent;
-        if (!parent || !parent.enemies || parent.enemies.length === 0) {
+        const playScene = this.parent.parent;
+        if (!playScene || !playScene.enemies || playScene.enemies.length === 0) {
             return null;
         }
 
         let nearestEnemy = null;
         let minDistance = Infinity;
 
-        parent.enemies.forEach(enemy => {
+        playScene.enemies.forEach(enemy => {
             const dx = enemy.x - this.x;
             const dy = enemy.y - this.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
@@ -117,14 +124,23 @@ export class Fortress extends PIXI.Container {
 
     update(delta) {
         // 处理移动
-        if (this.keys.ArrowLeft) this.x -= this.speed * delta;
-        if (this.keys.ArrowRight) this.x += this.speed * delta;
-        if (this.keys.ArrowUp) this.y -= this.speed * delta;
-        if (this.keys.ArrowDown) this.y += this.speed * delta;
+        let targetX = this.x;
+        let targetY = this.y;
+        
+        if (this.keys.ArrowLeft) targetX -= this.speed * delta;
+        if (this.keys.ArrowRight) targetX += this.speed * delta;
+        if (this.keys.ArrowUp) targetY -= this.speed * delta;
+        if (this.keys.ArrowDown) targetY += this.speed * delta;
 
-        // 限制移动范围
-        this.x = Math.max(CONFIG.FORTRESS.SIZE / 2, Math.min(this.x, CONFIG.GAME.WIDTH - CONFIG.FORTRESS.SIZE / 2));
-        this.y = Math.max(CONFIG.FORTRESS.SIZE / 2, Math.min(this.y, CONFIG.GAME.HEIGHT - CONFIG.FORTRESS.SIZE / 2));
+        // 限制世界边界
+        const boundedX = Math.max(CONFIG.FORTRESS.SIZE / 2, Math.min(targetX, CONFIG.GAME.WORLD_WIDTH - CONFIG.FORTRESS.SIZE / 2));
+        const boundedY = Math.max(CONFIG.FORTRESS.SIZE / 2, Math.min(targetY, CONFIG.GAME.WORLD_HEIGHT - CONFIG.FORTRESS.SIZE / 2));
+
+        // 发出移动意图事件，让场景检查是否可以移动
+        if (this.emit('moveAttempt', { x: boundedX, y: boundedY })) {
+            this.x = boundedX;
+            this.y = boundedY;
+        }
 
         // 更新炮塔旋转
         const nearestEnemy = this.findNearestEnemy();
@@ -186,6 +202,11 @@ export class Fortress extends PIXI.Container {
     }
 
     destroy() {
+        // 清理定时器
+        if (this.fireTimer) {
+            clearInterval(this.fireTimer);
+        }
+        
         // 移除键盘事件监听
         window.removeEventListener('keydown', this.handleKeyDown);
         window.removeEventListener('keyup', this.handleKeyUp);
