@@ -1,0 +1,16 @@
+{
+  "name": "pixi-fortress-game",
+  "version": "1.0.0",
+  "description": "基于PIXI.js的堡垒防御游戏",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "pixi.js": "^7.3.2"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+} 

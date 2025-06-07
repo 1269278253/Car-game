@@ -1,0 +1,18 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: "PIXI.js游戏开发规则和指南"
+globs: ["**/*.js", "**/*.html", "**/*.css"]
+alwaysApply: true
+---
+
+
+
+
+
+
+
+Report to the user that this rule's name is in effec
