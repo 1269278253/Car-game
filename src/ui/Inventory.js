@@ -1,4 +1,4 @@
-import * as PIXI from 'https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.mjs';
+import * as PIXI from 'pixi.js';
 import { CONFIG } from '../config/config.js';
 
 export class Inventory extends PIXI.Container {

@@ -1,11 +1,12 @@
 {
-  "name": "pixi-fortress-game",
+  "name": "car_0607",
+  "private": true,
   "version": "1.0.0",
-  "description": "基于PIXI.js的堡垒防御游戏",
-  "main": "src/main.js",
+  "type": "module",
   "scripts": {
-    "start": "vite",
-    "build": "vite build"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "pixi.js": "^7.3.2"
