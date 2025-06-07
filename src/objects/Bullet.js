@@ -3,7 +3,7 @@
  * @class Bullet
  * @extends PIXI.Container
  */
-import * as PIXI from 'pixi.js';
+import * as PIXI from 'https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.mjs';
 import { CONFIG } from '../config/config.js';
 import { ASSETS } from '../config/assets.js';
 

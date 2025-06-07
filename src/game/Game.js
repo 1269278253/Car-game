@@ -1,4 +1,4 @@
-import * as PIXI from 'pixi.js';
+import * as PIXI from 'https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.mjs';
 import { SceneManager } from '../core/SceneManager.js';
 import { CONFIG } from '../config/config.js';
 import { PlayScene } from '../scenes/PlayScene.js';
