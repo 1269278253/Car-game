@@ -24,7 +24,7 @@ export class Enemy extends PIXI.Container {
     
     setup() {
         // 创建敌人主体（使用坦克精灵）
-        this.body = PIXI.Sprite.from(ASSETS.TANKS.BODY.RED);
+        this.body = PIXI.Sprite.from('tank_body_red');
         this.body.name = 'enemy_body';
         this.body.anchor.set(0.5);
         this.body.width = CONFIG.ENEMY.SIZE * 1.5;
@@ -32,7 +32,7 @@ export class Enemy extends PIXI.Container {
         this.addChild(this.body);
 
         // 创建炮塔
-        this.turret = PIXI.Sprite.from(ASSETS.TANKS.BARREL.RED);
+        this.turret = PIXI.Sprite.from('tank_barrel_red');
         this.turret.name = 'enemy_turret';
         this.turret.anchor.set(0.25, 0.5);
         this.turret.width = CONFIG.ENEMY.SIZE * 1.2;

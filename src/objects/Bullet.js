@@ -42,7 +42,7 @@ export class Bullet extends PIXI.Container {
      */
     setup() {
         // 创建子弹精灵
-        this.sprite = PIXI.Sprite.from(ASSETS.BULLETS.BLUE);
+        this.sprite = PIXI.Sprite.from('bullet_blue');
         this.sprite.name = 'bullet_sprite';
         this.sprite.anchor.set(0.5);
         this.sprite.width = CONFIG.BULLET.SIZE * 2;

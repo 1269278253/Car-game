@@ -69,18 +69,42 @@ export class PlayScene extends PIXI.Container {
 
     async loadAssets() {
         try {
-            // 收集所有需要加载的资源URL
-            const assets = [
-                ...Object.values(ASSETS.TANKS.BODY),
-                ...Object.values(ASSETS.TANKS.BARREL),
-                ...Object.values(ASSETS.BULLETS),
-                ...Object.values(ASSETS.ENVIRONMENT)
-            ];
+            // 收集所有需要加载的资源URL和名称
+            const assetManifest = {
+                bundles: [{
+                    name: 'game-assets',
+                    assets: [
+                        ...Object.entries(ASSETS.TANKS.BODY).map(([key, url]) => ({
+                            name: `tank_body_${key.toLowerCase()}`,
+                            srcs: url
+                        })),
+                        ...Object.entries(ASSETS.TANKS.BARREL).map(([key, url]) => ({
+                            name: `tank_barrel_${key.toLowerCase()}`,
+                            srcs: url
+                        })),
+                        ...Object.entries(ASSETS.BULLETS).map(([key, url]) => ({
+                            name: `bullet_${key.toLowerCase()}`,
+                            srcs: url
+                        })),
+                        ...Object.entries(ASSETS.ENVIRONMENT).map(([key, url]) => ({
+                            name: `env_${key.toLowerCase()}`,
+                            srcs: url
+                        }))
+                    ]
+                }]
+            };
 
-            // 加载所有资源
-            await Promise.all(assets.map(asset => PIXI.Assets.load(asset)));
+            // 初始化资源
+            await PIXI.Assets.init({ manifest: assetManifest });
+
+            // 加载资源包
+            console.log('开始加载资源...');
+            await PIXI.Assets.loadBundle('game-assets');
+            console.log('所有资源加载完成');
+
         } catch (error) {
             console.error('资源加载失败:', error);
+            throw error;
         }
     }
 
@@ -90,7 +114,7 @@ export class PlayScene extends PIXI.Container {
         this.gameWorld.addChild(this.background);
 
         // 使用沙地纹理创建平铺背景
-        const texture = PIXI.Texture.from(ASSETS.ENVIRONMENT.SAND);
+        const texture = PIXI.Texture.from('env_sand');
         const tilingSprite = new PIXI.TilingSprite(
             texture,
             this.worldWidth,
@@ -105,7 +129,7 @@ export class PlayScene extends PIXI.Container {
         for (let i = 0; i < numTrees; i++) {
             const isLarge = Math.random() > 0.5;
             const tree = PIXI.Sprite.from(
-                isLarge ? ASSETS.ENVIRONMENT.TREE_LARGE : ASSETS.ENVIRONMENT.TREE_SMALL
+                isLarge ? 'env_tree_large' : 'env_tree_small'
             );
             
             // 添加名字属性

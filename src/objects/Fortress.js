@@ -29,7 +29,7 @@ export class Fortress extends PIXI.Container {
 
     setup() {
         // 创建坦克主体
-        this.body = PIXI.Sprite.from(ASSETS.TANKS.BODY.BLUE);
+        this.body = PIXI.Sprite.from('tank_body_blue');
         this.body.name = 'fortress_body';
         this.body.anchor.set(0.5);
         this.body.width = CONFIG.FORTRESS.SIZE * 1.5;
@@ -37,7 +37,7 @@ export class Fortress extends PIXI.Container {
         this.addChild(this.body);
 
         // 创建炮塔
-        this.turret = PIXI.Sprite.from(ASSETS.TANKS.BARREL.BLUE);
+        this.turret = PIXI.Sprite.from('tank_barrel_blue');
         this.turret.name = 'fortress_turret';
         this.turret.anchor.set(0.25, 0.5); // 设置锚点在炮管底部中心
         this.turret.width = CONFIG.FORTRESS.SIZE * 1.2;
