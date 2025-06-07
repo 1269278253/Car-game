@@ -1,10 +1,10 @@
 import * as PIXI from 'pixi.js';
-import { CONFIG } from '../config/config';
-import { ASSETS } from '../config/assets';
-import { Fortress } from '../objects/Fortress';
-import { Enemy } from '../objects/Enemy';
-import { HealthBar } from '../ui/HealthBar';
-import { Inventory } from '../ui/Inventory';
+import { CONFIG } from '../config/config.js';
+import { ASSETS } from '../config/assets.js';
+import { Fortress } from '../objects/Fortress.js';
+import { Enemy } from '../objects/Enemy.js';
+import { HealthBar } from '../ui/HealthBar.js';
+import { Inventory } from '../ui/Inventory.js';
 
 export class PlayScene extends PIXI.Container {
     constructor(app) {

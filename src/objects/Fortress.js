@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
-import { CONFIG } from '../config/config';
-import { ASSETS } from '../config/assets';
-import { Bullet } from './Bullet';
+import { CONFIG } from '../config/config.js';
+import { ASSETS } from '../config/assets.js';
+import { Bullet } from './Bullet.js';
 
 export class Fortress extends PIXI.Container {
     constructor() {

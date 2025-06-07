@@ -1,8 +1,8 @@
 import * as PIXI from 'pixi.js';
-import { SceneManager } from '../core/SceneManager';
-import { CONFIG } from '../config/config';
-import { PlayScene } from '../scenes/PlayScene';
-import { GameOverScene } from '../scenes/GameOverScene';
+import { SceneManager } from '../core/SceneManager.js';
+import { CONFIG } from '../config/config.js';
+import { PlayScene } from '../scenes/PlayScene.js';
+import { GameOverScene } from '../scenes/GameOverScene.js';
 
 export class Game {
     constructor() {

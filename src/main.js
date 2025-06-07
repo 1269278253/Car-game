@@ -1,4 +1,4 @@
-import { Game } from './game/Game';
+import { Game } from './game/Game.js';
 
 // 等待DOM加载完成
 window.addEventListener('DOMContentLoaded', () => {

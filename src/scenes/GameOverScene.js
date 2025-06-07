@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { CONFIG } from '../config/config';
+import { CONFIG } from '../config/config.js';
 
 export class GameOverScene extends PIXI.Container {
     constructor(app, finalScore) {

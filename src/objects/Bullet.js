@@ -4,8 +4,8 @@
  * @extends PIXI.Container
  */
 import * as PIXI from 'pixi.js';
-import { CONFIG } from '../config/config';
-import { ASSETS } from '../config/assets';
+import { CONFIG } from '../config/config.js';
+import { ASSETS } from '../config/assets.js';
 
 export class Bullet extends PIXI.Container {
     /**
