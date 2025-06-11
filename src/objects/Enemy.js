@@ -1,6 +1,5 @@
 import * as PIXI from 'pixi.js';
 import { CONFIG } from '../config/config.js';
-import { ASSETS } from '../config/assets.js';
 
 export class Enemy extends PIXI.Container {
     constructor() {
@@ -24,7 +23,7 @@ export class Enemy extends PIXI.Container {
     
     setup() {
         // 创建敌人主体（使用坦克精灵）
-        this.body = PIXI.Sprite.from('tank_body_red');
+        this.body = PIXI.Sprite.from('tank_red');
         this.body.name = 'enemy_body';
         this.body.anchor.set(0.5);
         this.body.width = CONFIG.ENEMY.SIZE * 1.5;
@@ -100,6 +99,7 @@ export class Enemy extends PIXI.Container {
             // 更新朝向
             this.rotation = Math.atan2(dy, dx);
             this.turret.rotation = this.rotation;
+            
         }
 
         // 如果接触到堡垒，造成伤害

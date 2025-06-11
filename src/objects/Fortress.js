@@ -1,7 +1,9 @@
 import * as PIXI from 'pixi.js';
 import { CONFIG } from '../config/config.js';
-import { ASSETS } from '../config/assets.js';
+
 import { Bullet } from './Bullet.js';
+import { Turret } from './Turret.js';
+import { ShotgunTurret } from './ShotgunTurret.js';
 
 export class Fortress extends PIXI.Container {
     constructor() {
@@ -10,8 +12,9 @@ export class Fortress extends PIXI.Container {
         this.health = CONFIG.FORTRESS.INITIAL_HEALTH;
         this.speed = CONFIG.FORTRESS.SPEED;
         this.rotation = 0;
-        this.lastFireTime = 0;
-        this.bullets = [];
+        
+        // 初始化炮台数组
+        this.turrets = [];
         
         // 初始化按键状态
         this.keys = {
@@ -29,20 +32,19 @@ export class Fortress extends PIXI.Container {
 
     setup() {
         // 创建坦克主体
-        this.body = PIXI.Sprite.from('tank_body_blue');
+        this.body = PIXI.Sprite.from('tank_blue');
         this.body.name = 'fortress_body';
         this.body.anchor.set(0.5);
         this.body.width = CONFIG.FORTRESS.SIZE * 1.5;
         this.body.height = CONFIG.FORTRESS.SIZE * 1.5;
         this.addChild(this.body);
 
-        // 创建炮塔
-        this.turret = PIXI.Sprite.from('tank_barrel_blue');
-        this.turret.name = 'fortress_turret';
-        this.turret.anchor.set(0.25, 0.5); // 设置锚点在炮管底部中心
-        this.turret.width = CONFIG.FORTRESS.SIZE * 1.2;
-        this.turret.height = CONFIG.FORTRESS.SIZE * 0.4;
-        this.addChild(this.turret);
+        // 创建炮台容器
+        this.turretContainer = new PIXI.Container();
+        this.addChild(this.turretContainer);
+
+        // 添加默认炮台
+        this.addTurret(new Turret());
 
         // 设置初始位置
         this.x = CONFIG.GAME.WIDTH / 2;
@@ -77,24 +79,60 @@ export class Fortress extends PIXI.Container {
         }, CONFIG.FORTRESS.FIRE_RATE);
     }
 
-    fire() {
-        const now = Date.now();
-        if (now - this.lastFireTime >= CONFIG.FORTRESS.FIRE_RATE) {
-            try {
-                // 计算子弹发射位置（从炮管前端发射）
-                const barrelLength = this.turret.width * 0.75;
-                const bulletX = this.x + Math.cos(this.turret.rotation) * barrelLength;
-                const bulletY = this.y + Math.sin(this.turret.rotation) * barrelLength;
+    // 添加新炮台
+    addTurret(turret) {
+        // 计算炮台位置
+        const angle = (this.turrets.length * Math.PI * 2) / CONFIG.FORTRESS.MAX_TURRETS;
+        const radius = CONFIG.FORTRESS.SIZE * 0.5;
+        
+        turret.x = Math.cos(angle) * radius;
+        turret.y = Math.sin(angle) * radius;
+        
+        this.turretContainer.addChild(turret);
+        this.turrets.push(turret);
+    }
 
-                // 创建新子弹
-                const bullet = new Bullet(bulletX, bulletY, this.turret.rotation);
+    // 移除炮台
+    removeTurret(index) {
+        if (index >= 0 && index < this.turrets.length) {
+            const turret = this.turrets[index];
+            this.turretContainer.removeChild(turret);
+            turret.destroy();
+            this.turrets.splice(index, 1);
+            
+            // 重新排列剩余炮台
+            this.repositionTurrets();
+        }
+    }
+
+    // 重新排列炮台位置
+    repositionTurrets() {
+        this.turrets.forEach((turret, index) => {
+            const angle = (index * Math.PI * 2) / CONFIG.FORTRESS.MAX_TURRETS;
+            const radius = CONFIG.FORTRESS.SIZE * 0.5;
+            
+            turret.x = Math.cos(angle) * radius;
+            turret.y = Math.sin(angle) * radius;
+        });
+    }
+
+    fire() {
+        try {
+            // 所有炮台同时发射
+            this.turrets.forEach(turret => {
+                const bullets = turret.fire(
+                    this.x + turret.x, 
+                    this.y + turret.y, 
+                    turret.rotation
+                );
                 
                 // 发出发射事件
-                this.emit('bulletFired', bullet);
-                this.lastFireTime = now;
-            } catch (error) {
-                console.error('子弹创建失败:', error);
-            }
+                bullets.forEach(bullet => {
+                    this.emit('bulletFired', bullet);
+                });
+            });
+        } catch (error) {
+            console.error('子弹创建失败:', error);
         }
     }
 
@@ -142,27 +180,23 @@ export class Fortress extends PIXI.Container {
             this.y = boundedY;
         }
 
-        // 更新炮塔旋转
+        // 更新所有炮台的旋转
         const nearestEnemy = this.findNearestEnemy();
         if (nearestEnemy) {
-            const dx = nearestEnemy.x - this.x;
-            const dy = nearestEnemy.y - this.y;
-            const targetRotation = Math.atan2(dy, dx);
-            
-            // 计算最短旋转路径
-            let rotationDiff = targetRotation - this.turret.rotation;
-            while (rotationDiff > Math.PI) rotationDiff -= Math.PI * 2;
-            while (rotationDiff < -Math.PI) rotationDiff += Math.PI * 2;
-            
-            // 使用线性插值实现平滑旋转
-            const rotationSpeed = CONFIG.FORTRESS.ROTATION_SPEED * delta;
-            this.turret.rotation += Math.sign(rotationDiff) * Math.min(Math.abs(rotationDiff), rotationSpeed);
-            
-            // 确保rotation始终在-PI到PI之间
-            this.turret.rotation = ((this.turret.rotation % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-            if (this.turret.rotation > Math.PI) {
-                this.turret.rotation -= Math.PI * 2;
-            }
+            this.turrets.forEach(turret => {
+                const dx = nearestEnemy.x - (this.x + turret.x);
+                const dy = nearestEnemy.y - (this.y + turret.y);
+                const targetRotation = Math.atan2(dy, dx);
+                
+                // 计算最短旋转路径
+                let rotationDiff = targetRotation - turret.rotation;
+                while (rotationDiff > Math.PI) rotationDiff -= Math.PI * 2;
+                while (rotationDiff < -Math.PI) rotationDiff += Math.PI * 2;
+                
+                // 使用线性插值实现平滑旋转
+                const rotationSpeed = CONFIG.FORTRESS.ROTATION_SPEED * delta;
+                turret.rotation += Math.sign(rotationDiff) * Math.min(Math.abs(rotationDiff), rotationSpeed);
+            });
         }
     }
 
@@ -186,22 +220,28 @@ export class Fortress extends PIXI.Container {
         this.alpha = 0.5 + (healthPercent * 0.5);
         
         // 根据生命值切换坦克颜色
-        let tankColor;
+        let tankTexture;
+        let barrelTexture;
         if (healthPercent > 0.7) {
-            tankColor = ASSETS.TANKS.BODY.BLUE;
-            this.turret.texture = PIXI.Texture.from(ASSETS.TANKS.BARREL.BLUE);
+            tankTexture = 'tank_blue';
+            barrelTexture = 'tank_barrel_blue';
         } else if (healthPercent > 0.3) {
-            tankColor = ASSETS.TANKS.BODY.GREEN;
-            this.turret.texture = PIXI.Texture.from(ASSETS.TANKS.BARREL.GREEN);
+            tankTexture = 'tank_green';
+            barrelTexture = 'tank_barrel_green';
         } else {
-            tankColor = ASSETS.TANKS.BODY.RED;
-            this.turret.texture = PIXI.Texture.from(ASSETS.TANKS.BARREL.RED);
+            tankTexture = 'tank_red';
+            barrelTexture = 'tank_barrel_red';
         }
         
-        this.body.texture = PIXI.Texture.from(tankColor);
+        this.body.texture = PIXI.Texture.from(tankTexture);
+        this.turrets.forEach(turret => turret.texture = PIXI.Texture.from(barrelTexture));
     }
 
     destroy() {
+        // 清理所有炮台
+        this.turrets.forEach(turret => turret.destroy());
+        this.turrets = [];
+        
         // 清理定时器
         if (this.fireTimer) {
             clearInterval(this.fireTimer);
@@ -211,7 +251,22 @@ export class Fortress extends PIXI.Container {
         window.removeEventListener('keydown', this.handleKeyDown);
         window.removeEventListener('keyup', this.handleKeyUp);
         
-        // 调用父类的destroy方法
         super.destroy();
+    }
+
+    // 切换炮台类型
+    switchTurret(type) {
+        // 移除旧炮台
+        this.turrets.forEach(turret => turret.destroy());
+        this.turrets = [];
+
+        // 创建新炮台
+        switch (type) {
+            case 'shotgun':
+                this.addTurret(new ShotgunTurret());
+                break;
+            default:
+                this.addTurret(new Turret());
+        }
     }
 } 

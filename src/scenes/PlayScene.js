@@ -5,6 +5,9 @@ import { Fortress } from '../objects/Fortress.js';
 import { Enemy } from '../objects/Enemy.js';
 import { HealthBar } from '../ui/HealthBar.js';
 import { Inventory } from '../ui/Inventory.js';
+import { TurretDrop } from '../objects/TurretDrop.js';
+import { ShotgunTurret } from '../objects/ShotgunTurret.js';
+import { Turret } from '../objects/Turret.js';
 
 export class PlayScene extends PIXI.Container {
     constructor(app) {
@@ -16,6 +19,7 @@ export class PlayScene extends PIXI.Container {
         this.bullets = [];
         this.items = [];
         this.trees = []; // 添加树木数组
+        this.drops = []; // 初始化掉落物数组
         
         // 初始化游戏状态
         this.score = 0;
@@ -69,27 +73,71 @@ export class PlayScene extends PIXI.Container {
 
     async loadAssets() {
         try {
-            // 收集所有需要加载的资源URL和名称
+            // 定义资源清单
             const assetManifest = {
                 bundles: [{
                     name: 'game-assets',
                     assets: [
-                        ...Object.entries(ASSETS.TANKS.BODY).map(([key, url]) => ({
-                            name: `tank_body_${key.toLowerCase()}`,
-                            srcs: url
-                        })),
-                        ...Object.entries(ASSETS.TANKS.BARREL).map(([key, url]) => ({
-                            name: `tank_barrel_${key.toLowerCase()}`,
-                            srcs: url
-                        })),
-                        ...Object.entries(ASSETS.BULLETS).map(([key, url]) => ({
-                            name: `bullet_${key.toLowerCase()}`,
-                            srcs: url
-                        })),
-                        ...Object.entries(ASSETS.ENVIRONMENT).map(([key, url]) => ({
-                            name: `env_${key.toLowerCase()}`,
-                            srcs: url
-                        }))
+                        // 坦克资源
+                        {
+                            name: 'tank_blue',
+                            srcs: ASSETS.TANKS.BODY.BLUE
+                        },
+                        {
+                            name: 'tank_red',
+                            srcs: ASSETS.TANKS.BODY.RED
+                        },
+                        {
+                            name: 'tank_green',
+                            srcs: ASSETS.TANKS.BODY.GREEN
+                        },
+                        {
+                            name: 'tank_black',
+                            srcs: ASSETS.TANKS.BODY.BLACK
+                        },
+                        {
+                            name: 'tank_barrel_blue',
+                            srcs: ASSETS.TANKS.BARREL.BLUE
+                        },
+                        {
+                            name: 'tank_barrel_red',
+                            srcs: ASSETS.TANKS.BARREL.RED
+                        },
+                        {
+                            name: 'tank_barrel_green',
+                            srcs: ASSETS.TANKS.BARREL.GREEN
+                        },
+                        {
+                            name: 'tank_barrel_black',
+                            srcs: ASSETS.TANKS.BARREL.BLACK
+                        },
+                        {
+                            name: 'tank_barrel_beige',
+                            srcs: ASSETS.TANKS.BARREL.BEIGE
+                        },
+                        // 子弹资源
+                        {
+                            name: 'bullet_blue',
+                            srcs: ASSETS.BULLETS.BLUE
+                        },
+                        // 环境资源
+                        {
+                            name: 'env_sand',
+                            srcs: ASSETS.ENVIRONMENT.SAND
+                        },
+                        {
+                            name: 'env_tree_large',
+                            srcs: ASSETS.ENVIRONMENT.TREE_LARGE
+                        },
+                        {
+                            name: 'env_tree_small',
+                            srcs: ASSETS.ENVIRONMENT.TREE_SMALL
+                        },
+                        // 烟雾效果
+                        {
+                            name: 'smoke',
+                            srcs: ASSETS.EFFECTS.SMOKE
+                        }
                     ]
                 }]
             };
@@ -156,16 +204,16 @@ export class PlayScene extends PIXI.Container {
         try {
             // 创建堡垒
             this.fortress = new Fortress();
-            // 将堡垒添加到游戏世界容器中
             this.gameWorld.addChild(this.fortress);
             
-            // 设置堡垒的初始位置在世界中心
-            this.fortress.x = this.worldWidth / 2;
-            this.fortress.y = this.worldHeight / 2;
-
-            // 设置事件监听
+            // 设置堡垒事件监听
             if (this.fortress) {
-                this.fortress.on('bulletFired', this.onBulletFired.bind(this));
+                this.fortress.on('bulletFired', bullet => {
+                    if (bullet) {
+                        this.gameWorld.addChild(bullet);
+                        this.bullets.push(bullet);
+                    }
+                });
             }
         } catch (error) {
             console.error('游戏对象创建失败:', error);
@@ -214,10 +262,10 @@ export class PlayScene extends PIXI.Container {
         }
     }
 
-    update(delta) {
-        if (this.isGameOver) return;
-
+    async update(delta) {
         try {
+            if (this.isGameOver) return;
+
             // 更新堡垒
             if (this.fortress && this.fortress.parent) {
                 // 保存当前位置
@@ -269,6 +317,7 @@ export class PlayScene extends PIXI.Container {
                 if (enemy.update(delta, this.fortress)) {
                     enemy.destroy();
                     this.enemies.splice(i, 1);
+                    this.handleEnemyDeath(enemy);
                 }
             }
 
@@ -294,7 +343,9 @@ export class PlayScene extends PIXI.Container {
                         continue;
                     }
                     if (this.checkCollision(bullet, enemy)) {
-                        if (enemy.takeDamage(CONFIG.BULLET.DAMAGE)) {
+                        if (enemy.takeDamage(bullet.damage)) {
+                            // 敌人死亡，处理掉落
+                            this.handleEnemyDeath(enemy);
                             this.enemies.splice(j, 1);
                             enemy.destroy();
                             this.score += 100;
@@ -309,6 +360,44 @@ export class PlayScene extends PIXI.Container {
                 }
 
                 if (bulletDestroyed) continue;
+            }
+
+            // 更新掉落物
+            for (let i = this.drops.length - 1; i >= 0; i--) {
+                const drop = this.drops[i];
+                if (!drop || !drop.parent) {
+                    this.drops.splice(i, 1);
+                    continue;
+                }
+
+                // 更新掉落物状态（闪烁和消失）
+                if (drop.update()) {
+                    this.drops.splice(i, 1);
+                    continue;
+                }
+
+                // 检查与堡垒的距离
+                const dx = this.fortress.x - drop.x;
+                const dy = this.fortress.y - drop.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < drop.collectRadius) {
+                    // 检查是否还有炮台位置
+                    if (this.fortress.turrets.length < CONFIG.FORTRESS.MAX_TURRETS) {
+                        // 收集掉落物
+                        this.drops.splice(i, 1);
+                        await drop.collect();
+                        
+                        // 添加新炮台
+                        switch (drop.type) {
+                            case 'shotgun':
+                                this.fortress.addTurret(new ShotgunTurret());
+                                break;
+                            default:
+                                this.fortress.addTurret(new Turret());
+                        }
+                    }
+                }
             }
 
             // 更新UI
@@ -415,6 +504,20 @@ export class PlayScene extends PIXI.Container {
         }
     }
 
+    handleEnemyDeath(enemy) {
+        try {
+            // 增加掉落概率便于测试
+            if (Math.random() < CONFIG.ITEM.DROP_CHANCE) { // 30%的掉落概率
+                const drop = new TurretDrop('shotgun', enemy.x, enemy.y);
+                this.gameWorld.addChild(drop);
+                this.drops.push(drop);
+                console.log('炮台掉落在位置:', enemy.x, enemy.y);
+            }
+        } catch (error) {
+            console.error('处理敌人死亡失败:', error);
+        }
+    }
+
     destroy() {
         try {
             // 清理定时器
@@ -435,6 +538,9 @@ export class PlayScene extends PIXI.Container {
             if (this.inventory) {
                 this.inventory.destroy();
             }
+
+            // 清理掉落物
+            this.drops.forEach(drop => drop.destroy());
 
             super.destroy();
         } catch (error) {

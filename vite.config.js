@@ -1,7 +1,10 @@
-export default {
-    base: '/CAR_0607/', // 替换为你的仓库名
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+    base: '/Car-game/',  // 确保这是正确的部署基础路径
     server: {
-        port: 3000,
+        host: 'localhost', // 明确指定主机
+        port: 3000,       // 明确指定端口
         open: true // 自动打开浏览器
     },
     build: {
@@ -10,4 +13,4 @@ export default {
         // 生成 sourcemap 以便调试
         sourcemap: true
     }
-} 
+}) 

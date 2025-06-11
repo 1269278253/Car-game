@@ -5,7 +5,6 @@
  */
 import * as PIXI from 'pixi.js';
 import { CONFIG } from '../config/config.js';
-import { ASSETS } from '../config/assets.js';
 
 export class Bullet extends PIXI.Container {
     /**
@@ -14,8 +13,9 @@ export class Bullet extends PIXI.Container {
      * @param {number} y - 初始Y坐标
      * @param {number} angle - 发射角度（弧度）
      * @param {number} speed - 移动速度
+     * @param {number} damage - 伤害值
      */
-    constructor(x, y, angle, speed = CONFIG.BULLET.SPEED) {
+    constructor(x, y, angle, speed = CONFIG.BULLET.SPEED, damage = CONFIG.BULLET.DAMAGE) {
         super();
         
         // 添加名字属性
@@ -28,7 +28,7 @@ export class Bullet extends PIXI.Container {
         // 设置属性
         this.angle = angle;
         this.speed = speed;
-        this.damage = CONFIG.BULLET.DAMAGE;
+        this.damage = damage;
         this.initialX = x;
         this.initialY = y;
 

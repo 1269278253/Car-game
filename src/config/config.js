@@ -16,7 +16,8 @@ export const CONFIG = {
         DAMAGE: 10,
         SIZE: 32,
         FIRE_RATE: 500, // 射击间隔（毫秒）
-        ROTATION_SPEED: 0.15 // 增加旋转速度以提高响应性
+        ROTATION_SPEED: 0.15, // 增加旋转速度以提高响应性
+        MAX_TURRETS: 4 // 最大炮台数量
     },
     
     // 子弹设置
@@ -40,7 +41,8 @@ export const CONFIG = {
     // 道具设置
     ITEM: {
         DROP_CHANCE: 0.3, // 30%掉落率
-        COLLECT_RADIUS: 40
+        COLLECT_RADIUS: 40,
+        LIFE_TIME: 5000, // 掉落物存在时间（毫秒）
     },
     
     // UI设置
@@ -54,5 +56,22 @@ export const CONFIG = {
     ENVIRONMENT: {
         TREE_LARGE_RADIUS: 30,  // 大树碰撞半径
         TREE_SMALL_RADIUS: 20   // 小树碰撞半径
+    },
+
+    // 炮台设置
+    TURRET: {
+        SIZE: 32,
+        FIRE_RATE: 100,
+        BULLET_DAMAGE: 20,
+        BULLET_SPEED: 8,
+        
+        // 散弹炮台
+        SHOTGUN: {
+            FIRE_RATE: 300,  // 射击间隔更长
+            BULLET_COUNT: 5,   // 每次发射5颗子弹
+            SPREAD_ANGLE: 0.5, // 散布角度（弧度）
+            BULLET_DAMAGE: 15, // 每颗子弹伤害较低
+            BULLET_SPEED: 7    // 子弹速度略慢
+        }
     }
 }; 
